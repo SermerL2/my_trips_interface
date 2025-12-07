@@ -854,14 +854,13 @@ void MainWindow::loadCompanions()
         tableCompanions->setItem(i, 2, new QTableWidgetItem(QString::fromStdString(companion.last_name)));
         tableCompanions->setItem(i, 3, new QTableWidgetItem(QString::fromStdString(companion.email)));
         tableCompanions->setItem(i, 4, new QTableWidgetItem(QString::fromStdString(companion.phone)));
-        //tableCompanions->setItem(i, 5, new QTableWidgetItem(QString::fromStdString(companion.relationship)));
+        // Убрали setItem для поля relationship
     }
     
     tableCompanions->resizeColumnsToContents();
 }
 
-void MainWindow::onAddCompanionClicked()
-{
+void MainWindow::onAddCompanionClicked() {
     if (!db.isConnected()) {
         showError("Сначала подключитесь к базе данных!");
         return;
@@ -869,7 +868,7 @@ void MainWindow::onAddCompanionClicked()
     
     QDialog dialog(this);
     dialog.setWindowTitle("Добавить сопутешественника");
-    dialog.setFixedSize(400, 300);
+    dialog.setFixedSize(400, 250);  // Уменьшили высоту, убрав поле relationship
     
     QVBoxLayout layout(&dialog);
     
@@ -885,9 +884,7 @@ void MainWindow::onAddCompanionClicked()
     QLabel lblPhone("Телефон:");
     QLineEdit editPhone;
     
-    QLabel lblRelationship("Отношения:");
-    QComboBox comboRelationship;
-    comboRelationship.addItems({"friend", "family", "colleague", "partner", "other"});
+    // Убрали поле relationship
     
     QHBoxLayout buttonLayout;
     QPushButton btnOk("Добавить");
@@ -903,8 +900,8 @@ void MainWindow::onAddCompanionClicked()
     layout.addWidget(&editEmail);
     layout.addWidget(&lblPhone);
     layout.addWidget(&editPhone);
-    layout.addWidget(&lblRelationship);
-    layout.addWidget(&comboRelationship);
+    // Убрали layout.addWidget(&lblRelationship);
+    // Убрали layout.addWidget(&comboRelationship);
     layout.addLayout(&buttonLayout);
     
     connect(&btnOk, &QPushButton::clicked, &dialog, &QDialog::accept);
@@ -921,7 +918,7 @@ void MainWindow::onAddCompanionClicked()
         companion.last_name = editLastName.text().toStdString();
         companion.email = editEmail.text().toStdString();
         companion.phone = editPhone.text().toStdString();
-        //companion.relationship = comboRelationship.currentText().toStdString();
+        // Убрали companion.relationship
         
         if (db.createCompanion(companion)) {
             showInfo("Сопутешественник успешно добавлен!");
@@ -932,8 +929,7 @@ void MainWindow::onAddCompanionClicked()
     }
 }
 
-void MainWindow::onEditCompanionClicked()
-{
+void MainWindow::onEditCompanionClicked() {
     if (!db.isConnected()) {
         showError("Сначала подключитесь к базе данных!");
         return;
@@ -952,7 +948,7 @@ void MainWindow::onEditCompanionClicked()
     
     QDialog dialog(this);
     dialog.setWindowTitle("Редактировать сопутешественника");
-    dialog.setFixedSize(400, 300);
+    dialog.setFixedSize(400, 250);  // Уменьшили высоту
     
     QVBoxLayout layout(&dialog);
     
@@ -972,10 +968,7 @@ void MainWindow::onEditCompanionClicked()
     QLineEdit editPhone;
     editPhone.setText(QString::fromStdString(companion.phone));
     
-    QLabel lblRelationship("Отношения:");
-    QComboBox comboRelationship;
-    comboRelationship.addItems({"friend", "family", "colleague", "partner", "other"});
-    //comboRelationship.setCurrentText(QString::fromStdString(companion.relationship));
+    // Убрали поле relationship
     
     QHBoxLayout buttonLayout;
     QPushButton btnOk("Сохранить");
@@ -991,8 +984,8 @@ void MainWindow::onEditCompanionClicked()
     layout.addWidget(&editEmail);
     layout.addWidget(&lblPhone);
     layout.addWidget(&editPhone);
-    layout.addWidget(&lblRelationship);
-    layout.addWidget(&comboRelationship);
+    // Убрали layout.addWidget(&lblRelationship);
+    // Убрали layout.addWidget(&comboRelationship);
     layout.addLayout(&buttonLayout);
     
     connect(&btnOk, &QPushButton::clicked, &dialog, &QDialog::accept);
@@ -1008,7 +1001,7 @@ void MainWindow::onEditCompanionClicked()
         companion.last_name = editLastName.text().toStdString();
         companion.email = editEmail.text().toStdString();
         companion.phone = editPhone.text().toStdString();
-        //companion.relationship = comboRelationship.currentText().toStdString();
+        // Убрали companion.relationship
         
         if (db.updateCompanion(companion)) {
             showInfo("Сопутешественник успешно обновлен!");

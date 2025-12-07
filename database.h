@@ -34,6 +34,7 @@ struct TravelCompanion {
     std::string last_name;
     std::string email;
     std::string phone;
+    // Убрали std::string relationship;
 };
 
 class Database {

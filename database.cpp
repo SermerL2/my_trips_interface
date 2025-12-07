@@ -108,7 +108,7 @@ bool Database::executeUpdate(const std::string& query) {
     return true;
 }
 
-bool Database::executeUpdate(const std::string& query, const std::vector<std::string>& params) {
+/*bool Database::executeUpdate(const std::string& query, const std::vector<std::string>& params) {
     if (!isConnected()) {
         last_error_ = "Not connected to database";
         return false;
@@ -131,9 +131,36 @@ bool Database::executeUpdate(const std::string& query, const std::vector<std::st
     
     PQclear(result);
     return true;
+}*/
+
+bool Database::executeUpdate(const std::string& query, const std::vector<std::string>& params) {
+    if (!isConnected()) {
+        last_error_ = "Not connected to database";
+        return false;
+    }
+    
+    const char* param_values[params.size()];
+    for (size_t i = 0; i < params.size(); ++i) {
+        param_values[i] = params[i].c_str();
+    }
+    
+    PGresult* result = PQexecParams(connection_, query.c_str(),
+                                   params.size(), nullptr,
+                                   param_values, nullptr, nullptr, 0);
+    
+    if (PQresultStatus(result) != PGRES_COMMAND_OK && 
+        PQresultStatus(result) != PGRES_TUPLES_OK) {
+        last_error_ = PQerrorMessage(connection_);
+        PQclear(result);
+        return false;
+    }
+    
+    PQclear(result);
+    return true;
 }
 
 // CRUD операции для поездок
+/*
 bool Database::createTrip(const Trip& trip) {
     std::string query = "INSERT INTO trips (trip_name, start_date, end_date, "
                        "total_budget, trip_status, notes) "
@@ -149,6 +176,27 @@ bool Database::createTrip(const Trip& trip) {
     };
     
     return executeUpdate(query, params);
+}
+*/
+bool Database::createTrip(const Trip& trip) {
+    std::string query = "INSERT INTO trips (trip_name, start_date, end_date, "
+                       "total_budget, trip_status, notes) "
+                       "VALUES ($1, $2, $3, $4, $5, $6) RETURNING trip_id";
+    
+    std::vector<std::string> params = {
+        trip.name,
+        trip.start_date,
+        trip.end_date,
+        std::to_string(trip.total_budget),
+        trip.status,
+        trip.notes
+    };
+    
+    PGresult* result = executeQuery(query, params);
+    if (!result) return false;
+    
+    PQclear(result);
+    return true;
 }
 
 std::vector<Trip> Database::readTrips() {
@@ -235,7 +283,7 @@ bool Database::deleteTrip(int id) {
 }
 
 // CRUD операции для расходов
-bool Database::createExpense(const Expense& expense) {
+/*bool Database::createExpense(const Expense& expense) {
     std::string query = "INSERT INTO expenses (trip_destination_id, expense_date, "
                        "amount, currency, category, description) "
                        "VALUES ($1, $2, $3, $4, $5, $6)";
@@ -250,6 +298,27 @@ bool Database::createExpense(const Expense& expense) {
     };
     
     return executeUpdate(query, params);
+}*/
+
+bool Database::createExpense(const Expense& expense) {
+    std::string query = "INSERT INTO expenses (trip_destination_id, expense_date, "
+                       "amount, currency, category, description) "
+                       "VALUES ($1, $2, $3, $4, $5, $6) RETURNING expense_id";
+    
+    std::vector<std::string> params = {
+        std::to_string(expense.trip_destination_id),
+        expense.expense_date,
+        std::to_string(expense.amount),
+        expense.currency,
+        expense.category,
+        expense.description
+    };
+    
+    PGresult* result = executeQuery(query, params);
+    if (!result) return false;
+    
+    PQclear(result);
+    return true;
 }
 
 std::vector<Expense> Database::readExpenses() {
@@ -334,10 +403,10 @@ bool Database::deleteExpense(int id) {
 }
 
 // CRUD операции для сопутешественников
-bool Database::createCompanion(const TravelCompanion& companion) {
+/*bool Database::createCompanion(const TravelCompanion& companion) {
     std::string query = "INSERT INTO travel_companions (first_name, last_name, "
-                       "email, phone, relationship) "
-                       "VALUES ($1, $2, $3, $4, $5)";
+                       "email, phone) "
+                       "VALUES ($1, $2, $3, $4)";
     
     std::vector<std::string> params = {
         companion.first_name,
@@ -348,8 +417,29 @@ bool Database::createCompanion(const TravelCompanion& companion) {
     };
     
     return executeUpdate(query, params);
+}*/
+
+bool Database::createCompanion(const TravelCompanion& companion) {
+    std::string query = "INSERT INTO travel_companions (first_name, last_name, "
+                       "email, phone) "
+                       "VALUES ($1, $2, $3, $4) RETURNING companion_id";
+    
+    std::vector<std::string> params = {
+        companion.first_name,
+        companion.last_name,
+        companion.email,
+        companion.phone
+        // Убрали companion.relationship
+    };
+    
+    PGresult* result = executeQuery(query, params);
+    if (!result) return false;
+    
+    PQclear(result);
+    return true;
 }
 
+// В методе readCompanions
 std::vector<TravelCompanion> Database::readCompanions() {
     std::vector<TravelCompanion> companions;
     std::string query = "SELECT companion_id, first_name, last_name, "
@@ -367,6 +457,7 @@ std::vector<TravelCompanion> Database::readCompanions() {
         companion.last_name = PQgetvalue(result, i, 2);
         companion.email = PQgetvalue(result, i, 3);
         companion.phone = PQgetvalue(result, i, 4);
+        // Не читаем relationship
         companions.push_back(companion);
     }
     
@@ -379,7 +470,7 @@ TravelCompanion Database::readCompanion(int id) {
     companion.id = -1;
     
     std::string query = "SELECT companion_id, first_name, last_name, "
-                       "email, phone, relationship "
+                       "email, phone "
                        "FROM travel_companions WHERE companion_id = $1";
     
     std::vector<std::string> params = {std::to_string(id)};
@@ -392,7 +483,7 @@ TravelCompanion Database::readCompanion(int id) {
         companion.last_name = PQgetvalue(result, 0, 2);
         companion.email = PQgetvalue(result, 0, 3);
         companion.phone = PQgetvalue(result, 0, 4);
-        //companion.relationship = PQgetvalue(result, 0, 5);
+        // Не читаем relationship
     }
     
     PQclear(result);
@@ -404,16 +495,14 @@ bool Database::updateCompanion(const TravelCompanion& companion) {
                        "first_name = $1, "
                        "last_name = $2, "
                        "email = $3, "
-                       "phone = $4, "
-                       "relationship = $5 "
-                       "WHERE companion_id = $6";
+                       "phone = $4 "
+                       "WHERE companion_id = $5";  // Исправлен индекс параметра
     
     std::vector<std::string> params = {
         companion.first_name,
         companion.last_name,
         companion.email,
         companion.phone,
-        //companion.relationship,
         std::to_string(companion.id)
     };
     
